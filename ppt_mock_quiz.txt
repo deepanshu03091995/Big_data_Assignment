@@ -32,28 +32,22 @@ if __name__ == "__main__":
             f.write("%s\t%d\n" % (key, count))
 
 **3. Write a Spark program to count the number of occurrences of each word in a given text file.**
-import pyspark
+import pyspark.sql.functions as F
 
 def word_count(text_file):
 
-    # Create a SparkContext.
+    spark = pyspark.sql.SparkSession.builder.appName("Word Count").getOrCreate()
 
-    sc = pyspark.SparkContext()
+    # Read the text file into a Spark DataFrame.
+    df = spark.read.text(text_file)
 
-    # Read the text file into a Spark RDD.
-
-    rdd = sc.textFile(text_file)
-
-    # Split the RDD into words.
-
-    words = rdd.flatMap(lambda line: line.split(" "))
+    # Split the DataFrame into words.
+    words = df.select(F.explode(F.split(df["value"], " "))).toDF("word")
 
     # Count the number of occurrences of each word.
-
-    word_counts = words.map(lambda word: (word, 1)).reduceByKey(lambda a, b: a + b)
+    word_counts = words.groupBy("word").count()
 
     # Print the word counts.
-
     for word, count in word_counts.collect():
         print(f"{word}: {count}")
 
@@ -62,7 +56,4 @@ if __name__ == "__main__":
     text_file = "/path/to/text/file"
 
     word_count(text_file)
-
-            
-
             
